@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Controller, useFieldArray, useForm, FormProvider } from "react-hook-form";
+import {
+  Controller,
+  useFieldArray,
+  useForm,
+  FormProvider,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { formSchema } from "@/lib/schema/schema";
@@ -41,7 +46,7 @@ export default function FormSteps() {
       includeReferences: false,
     },
   });
-  
+
   const {
     register,
     handleSubmit,
@@ -156,77 +161,69 @@ export default function FormSteps() {
           }}
           className="space-y-6"
         >
-        {/* Assignment PDF */}
-        {step === 0 && (
-          <AssignmentUploadStep
-            assignmentInputRef={assignmentInputRef}
-            isDraggingAssignment={isDraggingAssignment}
-            setIsDraggingAssignment={setIsDraggingAssignment}
-          />
-        )}
+          {/* Assignment PDF */}
+          {step === 0 && (
+            <AssignmentUploadStep
+              assignmentInputRef={assignmentInputRef}
+              isDraggingAssignment={isDraggingAssignment}
+              setIsDraggingAssignment={setIsDraggingAssignment}
+            />
+          )}
 
-        {/* University Name */}
-        {step === 2 && coverType === "auto" && (
-          <UniversityNameStep
-            isComboboxOpen={isComboboxOpen}
-            setIsComboboxOpen={setIsComboboxOpen}
-          />
-        )}
+          {/* University Name */}
+          {step === 2 && coverType === "auto" && (
+            <UniversityNameStep
+              isComboboxOpen={isComboboxOpen}
+              setIsComboboxOpen={setIsComboboxOpen}
+            />
+          )}
 
-        {/* Cover Page */}
-        {step === 1 && (
-          <CoverPageStep
-            coverInputRef={coverInputRef}
-            isDraggingCover={isDraggingCover}
-            setIsDraggingCover={setIsDraggingCover}
-          />
-        )}
+          {/* Cover Page */}
+          {step === 1 && (
+            <CoverPageStep
+              coverInputRef={coverInputRef}
+              isDraggingCover={isDraggingCover}
+              setIsDraggingCover={setIsDraggingCover}
+            />
+          )}
 
-        {/* Assignment Type */}
-        {step === 3 && (
-          <AssignmentTypeStep />
-        )}
+          {/* Assignment Type */}
+          {step === 3 && <AssignmentTypeStep />}
 
-        {/* Details (Individual or Group) */}
-        {step === 4 && (
-          <DetailsStep />
-        )}
+          {/* Details (Individual or Group) */}
+          {step === 4 && <DetailsStep />}
 
-        {/* Outlines & References */}
-        {step === 5 && (
-          <SectionsStep />
-        )}
+          {/* Outlines & References */}
+          {step === 5 && <SectionsStep />}
 
+          {/* Review & Submit */}
+          {step === 7 && (
+            <ReviewStep
+              setStep={setStep}
+              handleSubmit={handleSubmit}
+              onSubmit={onSubmit}
+              onInvalid={onInvalid}
+            />
+          )}
 
-
-        {/* Review & Submit */}
-        {step === 6 && (
-          <ReviewStep
-            setStep={setStep}
-            handleSubmit={handleSubmit}
-            onSubmit={onSubmit}
-            onInvalid={onInvalid}
-          />
-        )}
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onBack}
-            disabled={step === 0}
-            className={step === 0 ? "hidden" : ""}
-          >
-            Back
-          </Button>
-          {step < 6 ? (
-            <Button type="button" onClick={onNext}>
-              Next
+          {/* Navigation */}
+          <div className="flex items-center justify-between pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onBack}
+              disabled={step === 0}
+              className={step === 0 ? "hidden" : ""}
+            >
+              Back
             </Button>
-          ) : null}
-        </div>
-      </form>
+            {step < 6 ? (
+              <Button type="button" onClick={onNext}>
+                Next
+              </Button>
+            ) : null}
+          </div>
+        </form>
       </FormProvider>
     </div>
   );

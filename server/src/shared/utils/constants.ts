@@ -47,7 +47,46 @@ ANALYZE the uploaded document and create a table of contents using EXACTLY this 
 
 DO NOT add any extra text, explanations, or commentary. OUTPUT ONLY the formatted table of contents.`;
 
-export const MAIN_PROMPT = (numberOfPages: number) => {
+export const REFERENCES_PROMPT = `CRITICAL FORMATTING REQUIREMENTS FOR REFERENCES/A WORKS CITED:
+
+You MUST follow this EXACT format with NO deviations:
+
+1. Start with: # REFERENCES
+2. Use ONLY standard academic citation formats
+3. Each reference should be on its own line
+4. Use consistent formatting for all entries
+5. Include a variety of source types (books, journal articles, websites, etc.)
+6. Ensure all citations are relevant to the document content
+7. Format examples:
+   - Books: Author, A. A. (Year). *Book Title*. Publisher.
+   - Journal Articles: Author, B. B. (Year). Article title. *Journal Name*, Volume(Issue), pages.
+   - Websites: Author, C. C. (Year, Month Day). Page title. *Website Name*. URL
+
+⚠️ ABSOLUTE REQUIREMENTS:
+- Start with exactly "# REFERENCES" (all caps)
+- Use only ASCII characters
+- One reference per line
+- No extra text, explanations, or commentary
+- Maintain consistent formatting throughout
+- Include 15-25 high-quality, relevant references
+- Ensure all references are properly formatted according to academic standards
+
+Create a comprehensive references section that supports the content of the uploaded document. Include references that would logically support the arguments and topics discussed in the document.
+
+DO NOT add any extra text, explanations, or commentary. OUTPUT ONLY the formatted references section.`;
+
+export const MAIN_PROMPT = (
+  numberOfPages: number,
+  options?: { includeOutline?: boolean; includeReferences?: boolean }
+) => {
+  const outlineInstruction = options?.includeOutline
+    ? "\n- Include a detailed table of contents that outlines all major sections and subsections with appropriate page numbers"
+    : "";
+
+  const referencesInstruction = options?.includeReferences
+    ? "\n- Include a comprehensive references section with 15-25 academic sources relevant to the topic"
+    : "";
+
   const prompt = `You are a distinguished academic writing specialist with expertise in creating exceptional scholarly documents. Transform the uploaded document into a comprehensive, high-quality academic assignment that demonstrates mastery of the subject matter.
 
 🎯 CORE MISSION:
@@ -59,7 +98,7 @@ Create exactly ${numberOfPages} of intellectually rigorous, expertly crafted aca
 - Develop compelling arguments supported by evidence and critical analysis
 - Integrate complex ideas with clarity and precision
 - Insert "===PAGE BREAK===" at the end of each complete page
-- CRITICAL: Use only standard ASCII characters (no emojis, Unicode symbols, or special characters)
+- CRITICAL: Use only standard ASCII characters (no emojis, Unicode symbols, or special characters)${outlineInstruction}${referencesInstruction}
 
 ✨ ADVANCED FORMATTING FRAMEWORK:
 - Use # for the main document title (appears only once at the beginning)

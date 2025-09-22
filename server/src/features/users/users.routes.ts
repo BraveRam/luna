@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 import { updateUser, upsertUser } from "./users.service.ts";
+import { limiter } from "../../middleware/rate-limit.ts";
 
 const users = new Hono();
 
-users.post("/", async (c) => {
+users.post("/", limiter, async (c) => {
   const { id, name } = await c.req.json();
 
   const user = await upsertUser(id, name);
@@ -19,6 +20,7 @@ users.post("/", async (c) => {
 
 users.patch("/", async (c) => {
   const { id, name } = await c.req.json();
+  console.log("PATCH", id, name);
 
   const user = await updateUser(id, name);
 

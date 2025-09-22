@@ -1,6 +1,6 @@
 import { verifyToken } from "@clerk/backend";
 import type { Context, Next } from "hono";
-import { env } from "../config/env.js";
+import { env } from "../config/env.ts";
 
 export const clerkAuth = async (c: Context, next: Next) => {
   const authHeader = c.req.header("Authorization");

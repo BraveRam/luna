@@ -21,6 +21,7 @@ export const upsertUser = async (id: number, name: string) => {
 };
 
 export const updateUser = async (id: number, name: string) => {
+  console.log(id, name);
   const [updatedUser] = await db
     .update(users)
     .set({
