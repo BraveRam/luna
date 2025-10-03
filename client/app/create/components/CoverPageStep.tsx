@@ -29,7 +29,23 @@ export default function CoverPageStep({
           render={({ field }) => (
             <RadioGroup
               value={field.value}
-              onValueChange={field.onChange}
+              onValueChange={(val) => {
+                // Update the cover page type first
+                field.onChange(val);
+                // If switching to custom, clear auto-cover specific fields
+                if (val === "custom") {
+                  setValue("universityName" as any, "" as any, { shouldValidate: true });
+                  setValue("studentName" as any, "" as any, { shouldValidate: true });
+                  setValue("teacherName" as any, "" as any, { shouldValidate: true });
+                  setValue("submissionDate" as any, undefined as any, { shouldValidate: true });
+                  setValue("groupMembers" as any, [] as any, { shouldValidate: true });
+                }
+                // If switching to auto, clear any previously uploaded custom cover PDF
+                if (val === "auto") {
+                  setValue("coverPage.customCoverPdf" as any, undefined as any, { shouldValidate: true });
+                  if (coverInputRef.current) coverInputRef.current.value = "";
+                }
+              }}
               className="grid grid-cols-1 gap-2 mt-2"
             >
               <label className="inline-flex items-center gap-2">

@@ -66,6 +66,21 @@ export function filterFormData<T extends Record<string, any>>(data: T): Partial<
     }
   }
   
+  // Post-filter pass: if coverPage.type is custom, strip fields that should not be submitted
+  try {
+    const cover = (filtered as any).coverPage;
+    if (cover && cover.type === 'custom') {
+      // Remove auto-only metadata
+      delete (filtered as any).universityName;
+      delete (filtered as any).studentName;
+      delete (filtered as any).teacherName;
+      delete (filtered as any).submissionDate;
+      delete (filtered as any).groupMembers;
+    }
+  } catch (_) {
+    // No-op safeguard
+  }
+
   return filtered;
 }
 

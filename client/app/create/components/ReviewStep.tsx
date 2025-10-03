@@ -8,6 +8,7 @@ import {
   FileText,
   GraduationCap,
   ListOrdered,
+  LucideChevronLeftCircle,
   PencilLine,
   User,
   Users,
@@ -86,6 +87,14 @@ export default function ReviewStep({
                 </Button>
               )}
               <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  onClick={() => setStep(2)}
+                >
+                  Edit College
+                </Button>
+              <Button
                 type="button"
                 variant="link"
                 size="sm"
@@ -102,6 +111,13 @@ export default function ReviewStep({
                 <span>{getValues("universityName")}</span>
               </div>
             )}
+            <div className="flex items-center gap-2">
+              <LucideChevronLeftCircle className="size-4 opacity-70" />
+              <span>
+                <span className="font-bold">College name:</span>{" "}
+                {getValues("collegeName")}
+              </span>
+            </div>
             <div className="flex items-center gap-2">
               <FileText className="size-4 opacity-70" />
               <span>

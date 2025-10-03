@@ -68,7 +68,7 @@ You MUST follow this EXACT format with NO deviations:
 - One reference per line
 - No extra text, explanations, or commentary
 - Maintain consistent formatting throughout
-- Include 15-25 high-quality, relevant references
+- Include 3-7 high-quality, relevant references
 - Ensure all references are properly formatted according to academic standards
 
 Create a comprehensive references section that supports the content of the uploaded document. Include references that would logically support the arguments and topics discussed in the document.
@@ -77,20 +77,12 @@ DO NOT add any extra text, explanations, or commentary. OUTPUT ONLY the formatte
 
 export const MAIN_PROMPT = (
   numberOfPages: number,
-  options?: { includeOutline?: boolean; includeReferences?: boolean }
+  options?: { includeReferences?: boolean }
 ) => {
-  const outlineInstruction = options?.includeOutline
-    ? "\n- Include a detailed table of contents that outlines all major sections and subsections with appropriate page numbers"
-    : "";
-
-  const referencesInstruction = options?.includeReferences
-    ? "\n- Include a comprehensive references section with 15-25 academic sources relevant to the topic"
-    : "";
-
   const prompt = `You are a distinguished academic writing specialist with expertise in creating exceptional scholarly documents. Transform the uploaded document into a comprehensive, high-quality academic assignment that demonstrates mastery of the subject matter.
 
 🎯 CORE MISSION:
-Create exactly ${numberOfPages} of intellectually rigorous, expertly crafted academic content that showcases deep analytical thinking and scholarly excellence.
+Create exactly ${numberOfPages} pages of intellectually rigorous, expertly crafted academic content that showcases deep analytical thinking and scholarly excellence.
 
 📚 CONTENT SPECIFICATIONS:
 - Each page should contain 550-650 words of substantive academic content
@@ -98,7 +90,7 @@ Create exactly ${numberOfPages} of intellectually rigorous, expertly crafted aca
 - Develop compelling arguments supported by evidence and critical analysis
 - Integrate complex ideas with clarity and precision
 - Insert "===PAGE BREAK===" at the end of each complete page
-- CRITICAL: Use only standard ASCII characters (no emojis, Unicode symbols, or special characters)${outlineInstruction}${referencesInstruction}
+- CRITICAL: Use only standard ASCII characters (no emojis, Unicode symbols, or special characters)
 
 ✨ ADVANCED FORMATTING FRAMEWORK:
 - Use # for the main document title (appears only once at the beginning)
@@ -131,11 +123,6 @@ Create exactly ${numberOfPages} of intellectually rigorous, expertly crafted aca
    - Discuss broader implications and significance
    - Suggest areas for future research or consideration
 
-4. **References** (fits on 1 page maximum)
-   - Include relevant academic sources
-   - Use proper citation formatting
-   - Demonstrate breadth of research
-
 🎓 EXCELLENCE STANDARDS:
 - Demonstrate original thinking and unique insights
 - Employ sophisticated vocabulary and varied sentence structures
@@ -151,6 +138,14 @@ Create exactly ${numberOfPages} of intellectually rigorous, expertly crafted aca
 - Clean, professional presentation suitable for academic submission
 - Consistent formatting that enhances readability
 - Proper paragraph structure and spacing
+
+📏 PAGE COUNT ENFORCEMENT (CRITICAL):
+- Produce EXACTLY ${numberOfPages} pages.
+- Use EXACTLY ${numberOfPages - 1} occurrences of "===PAGE BREAK===" (one between each page) and DO NOT place a page break after the final page.
+- Do not exceed or fall short of the requested page count under any circumstance.
+- If references are requested, include them within the same ${numberOfPages}-page limit.
+
+${ options?.includeReferences && REFERENCES_PROMPT}
 
 Deliver EXCLUSIVELY the formatted assignment content with appropriate page breaks. No explanatory text, meta-commentary, or additional information beyond the requested academic document.`;
   return prompt;

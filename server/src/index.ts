@@ -5,8 +5,11 @@ import routes from "./routes.js";
 import { errorHandler } from "./middleware/error-handler.ts";
 import { limiter } from "./middleware/rate-limit.ts";
 import { getConnInfo } from "@hono/node-server/conninfo";
+import { cors } from "hono/cors";
 
 const app = new Hono();
+
+app.use("*", cors())
 
 app.use("*", logger());
 app.use("*", errorHandler);

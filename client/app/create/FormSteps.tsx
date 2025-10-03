@@ -10,7 +10,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { formSchema } from "@/lib/schema/schema";
-import { FormData } from "@/lib/types/types";
+import { type FormData as AssignmentFormData } from "@/lib/types/types";
 import { filterFormData } from "@/lib/utils/filterFormData";
 import AssignmentUploadStep from "./components/AssignmentUploadStep";
 import CoverPageStep from "./components/CoverPageStep";
@@ -19,9 +19,19 @@ import AssignmentTypeStep from "./components/AssignmentTypeStep";
 import DetailsStep from "./components/DetailsStep";
 import SectionsStep from "./components/SectionsStep";
 import ReviewStep from "./components/ReviewStep";
+import {
+  Stepper,
+  StepperIndicator,
+  StepperItem,
+  StepperSeparator,
+  StepperTrigger,
+} from "@/components/ui/stepper"
+
+const steps = [1, 2, 3, 4, 5]
 
 export default function FormSteps() {
   const [step, setStep] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isDraggingAssignment, setIsDraggingAssignment] =
     useState<boolean>(false);
   const [isDraggingCover, setIsDraggingCover] = useState<boolean>(false);
@@ -29,7 +39,7 @@ export default function FormSteps() {
   const coverInputRef = useRef<HTMLInputElement | null>(null);
   const [isComboboxOpen, setIsComboboxOpen] = useState<boolean>(false);
 
-  const methods = useForm<FormData>({
+  const methods = useForm<AssignmentFormData>({
     resolver: zodResolver(formSchema) as any,
     mode: "onTouched",
     defaultValues: {
@@ -44,19 +54,16 @@ export default function FormSteps() {
       groupMembers: [],
       includeOutlines: false,
       includeReferences: false,
+      collegeName: "",
+      subject: "",
     },
   });
 
   const {
-    register,
     handleSubmit,
-    control,
     setValue,
     watch,
     trigger,
-    getValues,
-    formState: { errors },
-    reset,
   } = methods;
 
   const assignmentType = watch("assignmentType");
@@ -68,19 +75,14 @@ export default function FormSteps() {
     }
   }, [assignmentType, setValue]);
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "groupMembers",
-  });
-
-  const stepFields: Array<keyof FormData | string> = useMemo(() => {
+  const stepFields: Array<keyof AssignmentFormData | string> = useMemo(() => {
     switch (step) {
       case 0:
         return ["assignmentPdf", "numPages"];
       case 1:
         return ["coverPage.type", "coverPage.customCoverPdf"];
       case 2:
-        return coverType === "auto" ? ["universityName"] : [];
+        return coverType === "auto" ? ["universityName", "collegeName", "subject", "section"] : [];
       case 3:
         return coverType === "auto" ? ["assignmentType"] : [];
       case 4:
@@ -88,7 +90,7 @@ export default function FormSteps() {
         if (assignmentType === "individual") {
           return ["studentName", "teacherName", "submissionDate"];
         }
-        return ["groupMembers"];
+        return ["groupMembers", "teacherName", "submissionDate"];
       case 5:
         return ["includeOutlines", "includeReferences"];
       case 6:
@@ -124,13 +126,51 @@ export default function FormSteps() {
       return target;
     });
 
-  const onSubmit = (data: FormData) => {
-    // Filter out empty values before logging
+  const onSubmit = async (data: AssignmentFormData) => {
     const filteredData = filterFormData(data);
+    const formData = new FormData();
+
+    formData.append("assignmentPdf", filteredData.assignmentPdf as File);
+    formData.append("assignmentType", filteredData.assignmentType as string);
+    formData.append("outlines", String(filteredData.includeOutlines));
+    formData.append("references", String(filteredData.includeReferences));
+    formData.append("numPages", String(filteredData.numPages));
+    formData.append("coverPageType", filteredData.coverPage?.type as string);
+    if (filteredData?.coverPage?.type === "custom") {
+      formData.append(
+        "coverPageFile",
+        filteredData.coverPage.customCoverPdf as File
+      );
+    }
+
+    if (filteredData.coverPage?.type === "auto") {
+      formData.append("universityName", filteredData.universityName as string);
+      formData.append("collegeName", filteredData.collegeName as string);
+      formData.append("subject", filteredData.subject as string);
+      formData.append("section", filteredData.section as string);
+
+      if (filteredData.assignmentType === "individual") {
+        formData.append("studentName", filteredData.studentName as string);
+        formData.append("teacherName", filteredData.teacherName as string);
+        formData.append("submissionDate", String(filteredData.submissionDate));
+      }
+
+      if(filteredData.assignmentType === "group") {
+        formData.append("groupMembers", JSON.stringify(filteredData.groupMembers));
+        formData.append("teacherName", filteredData.teacherName as string);
+        formData.append("submissionDate", String(filteredData.submissionDate));
+      }
+    }
+
+    const response = await fetch("http://localhost:5000/test", {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await response.json();
+    console.log(result);
+
     console.log("Form data (filtered):", filteredData);
-    alert("Data logged to console.");
-    setStep(0);
-    reset();
   };
 
   const onInvalid = (errs: unknown) => {
@@ -140,6 +180,21 @@ export default function FormSteps() {
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <h1 className="text-2xl font-semibold">Assignment Form</h1>
+      <Stepper value={step} onValueChange={setStep}>
+        {steps.map((step) => (
+          <StepperItem
+            key={step}
+            step={step}
+            className="not-last:flex-1"
+            loading={isLoading}
+          >
+            <StepperTrigger asChild>
+              <StepperIndicator />
+            </StepperTrigger>
+            {step < steps.length && <StepperSeparator />}
+          </StepperItem>
+        ))}
+      </Stepper>
       <FormProvider {...methods}>
         <form
           onKeyDown={(e) => {
@@ -149,7 +204,7 @@ export default function FormSteps() {
                 void onNext();
               } else {
                 void handleSubmit(
-                  (data) => onSubmit(data as FormData),
+                  (data) => onSubmit(data as AssignmentFormData),
                   onInvalid
                 )();
               }
@@ -197,7 +252,7 @@ export default function FormSteps() {
           {step === 5 && <SectionsStep />}
 
           {/* Review & Submit */}
-          {step === 7 && (
+          {step === 6 && (
             <ReviewStep
               setStep={setStep}
               handleSubmit={handleSubmit}
@@ -217,9 +272,13 @@ export default function FormSteps() {
             >
               Back
             </Button>
-            {step < 6 ? (
+            {step < 5 ? (
               <Button type="button" onClick={onNext}>
                 Next
+              </Button>
+            ) : step === 5 ? (
+              <Button type="button" onClick={() => setStep(6)}>
+                Review
               </Button>
             ) : null}
           </div>

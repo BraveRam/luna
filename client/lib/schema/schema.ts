@@ -7,7 +7,7 @@ export const pdfFileSchema = z
       "Please upload a PDF file containing the content of the assignment",
   })
   .refine((f) => f && f.size <= 5 * 1024 * 1024, {
-    message: "Max size is 5MB - don't burn my server, baby",
+    message: "Max size is 5MB - don't burn my server, dear",
   });
 
 export const formSchema = z
@@ -29,6 +29,9 @@ export const formSchema = z
         path: ["customCoverPdf"],
       }),
     universityName: z.string().optional(),
+    collegeName: z.string().optional(),
+    subject: z.string().optional(),
+    section: z.string().optional(),
     assignmentType: z.enum(["individual", "group"]),
     studentName: z.string().optional(),
     teacherName: z.string().optional(),
@@ -55,8 +58,29 @@ export const formSchema = z
           path: ["universityName"],
         });
       }
-    }
+      if (!data.collegeName || !data.collegeName.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "College name is required",
+          path: ["collegeName"],
+        });
+      }
+      if (!data.subject || !data.subject.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Subject is required",
+          path: ["subject"],
+        });
+      }
 
+      if (!data.section || !data.section.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Section is required",
+          path: ["section"],
+        });
+      }
+    }
     if (
       data.assignmentType === "individual" &&
       data.coverPage.type === "auto"
@@ -99,6 +123,22 @@ export const formSchema = z
           code: z.ZodIssueCode.custom,
           message: "Up to 10 members",
           path: ["groupMembers"],
+        });
+      }
+
+      if (!data.teacherName || !data.teacherName.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Please enter teacher name",
+          path: ["teacherName"],
+        });
+      }
+
+      if (!(data.submissionDate instanceof Date)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Please select your submission date",
+          path: ["submissionDate"],
         });
       }
     }

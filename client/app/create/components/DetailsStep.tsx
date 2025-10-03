@@ -106,6 +106,36 @@ export default function DetailsStep() {
               : (errors.groupMembers as any).message) || ""}
           </p>
         )}
+        <div className="space-y-2">
+          <label className="font-bold">Teacher name</label>
+          <Input
+            placeholder="Teacher name"
+            {...register("teacherName")}
+          />
+          {errors.teacherName && (
+            <p className="text-red-600 text-sm">
+              {String(errors.teacherName?.message)}
+            </p>
+          )}
+        </div>
+        <div className="space-y-2 flex flex-col items-center gap-2">
+          <label className="font-bold">Submission date</label>
+          <Controller
+            control={control}
+            name="submissionDate"
+            render={({ field }) => (
+              <InlineCalendar
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
+          {errors.submissionDate && (
+            <p className="text-red-600 text-sm">
+              {String(errors.submissionDate.message)}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
