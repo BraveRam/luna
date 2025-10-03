@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { clerkAuth } from "../../middleware/auth.js";
+import { clerkAuth } from "../../middleware/auth.ts";
 
 const dashboard = new Hono();
 

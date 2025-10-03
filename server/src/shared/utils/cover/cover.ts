@@ -1,6 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import fetch from "node-fetch"; // Use node-fetch for server-side image fetching
-import type { CoverPageOptions } from "../types/index.ts";
+import type { CoverPageOptions } from "../../types/index.ts";
 
 export async function createCoverPage(
   options: CoverPageOptions

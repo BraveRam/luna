@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Controller,
-  useFieldArray,
-  useForm,
-  FormProvider,
-} from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { formSchema } from "@/lib/schema/schema";
@@ -25,9 +20,12 @@ import {
   StepperItem,
   StepperSeparator,
   StepperTrigger,
-} from "@/components/ui/stepper"
+} from "@/components/ui/stepper";
+import { useAuth } from "@clerk/nextjs";
 
-const steps = [1, 2, 3, 4, 5]
+
+
+const steps = [1, 2, 3, 4, 5];
 
 export default function FormSteps() {
   const [step, setStep] = useState<number>(0);
@@ -38,6 +36,8 @@ export default function FormSteps() {
   const assignmentInputRef = useRef<HTMLInputElement | null>(null);
   const coverInputRef = useRef<HTMLInputElement | null>(null);
   const [isComboboxOpen, setIsComboboxOpen] = useState<boolean>(false);
+
+  const { getToken } = useAuth()
 
   const methods = useForm<AssignmentFormData>({
     resolver: zodResolver(formSchema) as any,
@@ -59,12 +59,7 @@ export default function FormSteps() {
     },
   });
 
-  const {
-    handleSubmit,
-    setValue,
-    watch,
-    trigger,
-  } = methods;
+  const { handleSubmit, setValue, watch, trigger } = methods;
 
   const assignmentType = watch("assignmentType");
   const coverType = watch("coverPage.type");
@@ -82,7 +77,9 @@ export default function FormSteps() {
       case 1:
         return ["coverPage.type", "coverPage.customCoverPdf"];
       case 2:
-        return coverType === "auto" ? ["universityName", "collegeName", "subject", "section"] : [];
+        return coverType === "auto"
+          ? ["universityName", "collegeName", "subject", "section"]
+          : [];
       case 3:
         return coverType === "auto" ? ["assignmentType"] : [];
       case 4:
@@ -130,6 +127,7 @@ export default function FormSteps() {
     const filteredData = filterFormData(data);
     const formData = new FormData();
 
+    
     formData.append("assignmentPdf", filteredData.assignmentPdf as File);
     formData.append("assignmentType", filteredData.assignmentType as string);
     formData.append("outlines", String(filteredData.includeOutlines));
@@ -142,27 +140,34 @@ export default function FormSteps() {
         filteredData.coverPage.customCoverPdf as File
       );
     }
-
+    
     if (filteredData.coverPage?.type === "auto") {
       formData.append("universityName", filteredData.universityName as string);
       formData.append("collegeName", filteredData.collegeName as string);
       formData.append("subject", filteredData.subject as string);
       formData.append("section", filteredData.section as string);
-
+      
       if (filteredData.assignmentType === "individual") {
         formData.append("studentName", filteredData.studentName as string);
         formData.append("teacherName", filteredData.teacherName as string);
         formData.append("submissionDate", String(filteredData.submissionDate));
       }
-
-      if(filteredData.assignmentType === "group") {
-        formData.append("groupMembers", JSON.stringify(filteredData.groupMembers));
+      
+      if (filteredData.assignmentType === "group") {
+        formData.append(
+          "groupMembers",
+          JSON.stringify(filteredData.groupMembers)
+        );
         formData.append("teacherName", filteredData.teacherName as string);
         formData.append("submissionDate", String(filteredData.submissionDate));
       }
     }
+    const token = await getToken();
 
     const response = await fetch("http://localhost:5000/test", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
       method: "POST",
       body: formData,
     });

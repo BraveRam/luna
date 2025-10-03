@@ -6,6 +6,7 @@ import {
   ClerkProvider,
 } from "@clerk/nextjs";
 import { shadcn } from "@clerk/themes";
+import { Toaster } from "@/components/ui/sonner"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,6 +40,7 @@ export default function RootLayout({
         }>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {children}
+            <Toaster position="top-right" />
           </ThemeProvider>
         </ClerkProvider>
       </body>

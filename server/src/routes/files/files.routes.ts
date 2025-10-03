@@ -1,12 +1,12 @@
 import { Hono } from "hono";
-import { getMainBucketId } from "../../storage/main/index.ts";
 import { getUtilsBucketId } from "../../storage/utils/index.ts";
 import { env } from "../../config/env.ts";
 import { limiter } from "../../middleware/rate-limit.ts";
+import { clerkAuth } from "../../middleware/auth.ts";
 
 const files = new Hono();
 
-files.get("/", limiter, async (c) => {
+files.get("/", limiter, clerkAuth, async (c) => {
   try {
     const bucketId = await getUtilsBucketId(env.BACKBLAZE_UTILS_BUCKET_NAME!);
     return c.json({

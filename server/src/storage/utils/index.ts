@@ -28,13 +28,11 @@ export const uploadToUtils = async (file: Buffer, fileName: string) => {
     bucketId,
   });
 
-  const timestamp = Date.now();
-  const uniqueFileName = `${timestamp}-${fileName}`;
 
   const result = await b2.uploadFile({
     uploadUrl,
     uploadAuthToken: authorizationToken,
-    fileName: uniqueFileName,
+    fileName,
     data: file,
   });
   return result.data;
@@ -45,8 +43,10 @@ export const downloadFile = async (fileName: string) => {
   const result = await b2.downloadFileByName({
     bucketName: env.BACKBLAZE_UTILS_BUCKET_NAME!,
     fileName,
-    responseType: "blob",
+    responseType: "arraybuffer",
   });
 
-  return result.data;
+  console.log("Downloaded file");
+
+  return Buffer.from(result.data);
 };
