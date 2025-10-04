@@ -16,13 +16,15 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFormContext } from "react-hook-form";
-import { SetStateAction } from "react";
+import { SetStateAction, useState } from "react";
 
 interface ReviewStepProps {
   setStep: (value: SetStateAction<number>) => void;
   handleSubmit: any;
   onSubmit: any;
   onInvalid: any;
+  submitLoading: boolean;
+  setSubmitLoading: (value: SetStateAction<boolean>) => void;
 }
 
 export default function ReviewStep({
@@ -30,6 +32,8 @@ export default function ReviewStep({
   handleSubmit,
   onSubmit,
   onInvalid,
+  submitLoading,
+  setSubmitLoading
 }: ReviewStepProps) {
   const { setValue, getValues } = useFormContext();
   
@@ -252,6 +256,7 @@ export default function ReviewStep({
       <Button
         type="button"
         className="h-12 w-full text-base mt-2"
+        disabled={submitLoading}
         onClick={() =>
           handleSubmit((data: FormData) => onSubmit(data), onInvalid)()
         }

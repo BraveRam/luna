@@ -1,3 +1,5 @@
+"use client"
+
 import { Logo } from "./logo"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,12 +21,15 @@ import {
 } from "@/components/ui/tooltip"
 import { ModeToggle } from "./theme-toggle"
 import { UserButton } from "@clerk/nextjs"
+import { usePathname } from "next/navigation"
+import Link from "next/link"
 
 const navigationLinks = [
   { href: "/create", label: "Create", active: true },
 ]
 
 export default function AuthNavbar() {
+  const pathname = usePathname()
   return (
     <header className="border-b px-10 max-w-6xl mx-auto md:px-6">
       <div className="flex h-16 items-center justify-between gap-4">
@@ -68,46 +73,45 @@ export default function AuthNavbar() {
             <PopoverContent align="start" className="w-36 p-1 md:hidden">
               <NavigationMenu className="max-w-none *:w-full">
                 <NavigationMenuList className="flex-col items-start gap-0 md:gap-2">
-                  {navigationLinks.map((link, index) => (
-                    <NavigationMenuItem key={index} className="w-full">
+                  {pathname !== "/create" && (
+                    <NavigationMenuItem className="w-full">
                       <NavigationMenuLink
-                        href={link.href}
+                        href={"/create"}
                         className="flex-row items-center gap-2 py-1.5"
-                        active={link.active}
+                        active={true}
                       >
-                        <Button>{link.label}</Button>
+                        <Button>Create</Button>
                       </NavigationMenuLink>
                     </NavigationMenuItem>
-                  ))}
+                  )}
                 </NavigationMenuList>
               </NavigationMenu>
             </PopoverContent>
           </Popover>
           <div className="flex items-center gap-6">
             {/* Logo */}
-            <a href="#" className="text-primary hover:text-primary/90">
+            <Link href="/" className="text-primary hover:text-primary/90">
               <Logo />
-            </a>
+            </Link>
             {/* Desktop navigation - text only */}
-            
           </div>
         </div>
         {/* Right side */}
         <div className="flex items-center gap-2">
           <NavigationMenu className="hidden md:flex">
-              <NavigationMenuList className="gap-4">
-                {navigationLinks.map((link) => (
-                  <NavigationMenuItem key={link.label}>
-                    <NavigationMenuLink
-                      href={link.href}
-                      className="px-2 py-1 text-sm font-medium hover:text-primary"
-                    >
-                      <Button>{link.label}</Button>
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                ))}
-              </NavigationMenuList>
-            </NavigationMenu>
+            <NavigationMenuList className="gap-4">
+              {pathname !== "/create" && (
+                <NavigationMenuItem>
+                  <NavigationMenuLink
+                    href={"/create"}
+                    className="px-2 py-1 text-sm font-medium hover:text-primary"
+                  >
+                    <Button>Create</Button>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              )}
+            </NavigationMenuList>
+          </NavigationMenu>
           <Button>Credits</Button>
           {/* Theme toggle */}
           <ModeToggle />

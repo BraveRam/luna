@@ -22,20 +22,21 @@ import {
   StepperTrigger,
 } from "@/components/ui/stepper";
 import { useAuth } from "@clerk/nextjs";
-
-
+import { useRouter } from "next/navigation";
 
 const steps = [1, 2, 3, 4, 5];
 
 export default function FormSteps() {
   const [step, setStep] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isDraggingAssignment, setIsDraggingAssignment] =
     useState<boolean>(false);
   const [isDraggingCover, setIsDraggingCover] = useState<boolean>(false);
   const assignmentInputRef = useRef<HTMLInputElement | null>(null);
   const coverInputRef = useRef<HTMLInputElement | null>(null);
   const [isComboboxOpen, setIsComboboxOpen] = useState<boolean>(false);
+  const [submitLoading, setSubmitLoading] = useState<boolean>(false);
+
+  const router = useRouter()
 
   const { getToken } = useAuth()
 
@@ -173,6 +174,14 @@ export default function FormSteps() {
     });
 
     const result = await response.json();
+
+    if(response.ok) {
+      router.push("/dashboard")
+      methods.reset();
+      setStep(0)
+    } else {
+      alert(result.message || "Something went wrong. Please try again.");
+    }
     console.log(result);
 
     console.log("Form data (filtered):", filteredData);
@@ -191,7 +200,6 @@ export default function FormSteps() {
             key={step}
             step={step}
             className="not-last:flex-1"
-            loading={isLoading}
           >
             <StepperTrigger asChild>
               <StepperIndicator />
@@ -259,6 +267,8 @@ export default function FormSteps() {
           {/* Review & Submit */}
           {step === 6 && (
             <ReviewStep
+            submitLoading={submitLoading}
+            setSubmitLoading={setSubmitLoading}
               setStep={setStep}
               handleSubmit={handleSubmit}
               onSubmit={onSubmit}
