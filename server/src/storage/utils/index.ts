@@ -50,3 +50,34 @@ export const downloadFile = async (fileName: string) => {
 
   return Buffer.from(result.data);
 };
+
+export const deleteFile = async (fileName: string) => {
+  await utilsInit();
+
+  const bucketId: string = await getUtilsBucketId(
+    env.BACKBLAZE_UTILS_BUCKET_NAME!
+  );
+
+  const { data } = await b2.listFileVersions({
+    bucketId,
+    startFileName: fileName,
+    maxFileCount: 100, 
+  } as any);
+
+    const filesToDelete = data.files.filter((file: any) => file.fileName === fileName);
+
+    if (filesToDelete.length === 0) {
+      throw new Error(`File "${fileName}" not found`);
+    }
+
+    // Delete each version
+    for (const file of filesToDelete) {
+      await b2.deleteFileVersion({
+        fileName: file.fileName,
+        fileId: file.fileId,
+      });
+      console.log(`Deleted file "${file.fileName}" (version ${file.fileId})`);
+    }
+
+  return { message: `Deleted ${filesToDelete.length} version(s) of file "${fileName}"` };
+};

@@ -14,6 +14,6 @@ export const utilsInit = async () => {
     await b2.authorize();
     console.log("Utils authorized");
   } catch (error) {
-    console.log(error);
+    console.log("Error authorizing utils", error);
   }
 };

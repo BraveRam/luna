@@ -1,14 +1,15 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { upsertUser } from "./users.service.ts";
 import { limiter } from "../../middleware/rate-limit.ts";
 import { clerkAuth } from "../../middleware/auth.ts";
 
 const users = new Hono();
 
-users.post("/", limiter, clerkAuth, async (c) => {
+users.post("/", limiter, clerkAuth, async (c: Context) => {
   const { name, email } = await c.req.json();
 
   const user = await upsertUser({
+    userId: c.get("userId"),
     name,
     email
   });

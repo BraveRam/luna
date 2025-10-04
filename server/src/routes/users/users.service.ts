@@ -3,6 +3,7 @@ import { db } from "../../config/db.ts";
 import { users } from "../../db/schema.ts";
 
 interface UserPayload {
+  userId: string;
   name: string;
   email: string
 }

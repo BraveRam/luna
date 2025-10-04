@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { PDFService } from "../../services/pdf.service.ts";
 import { PDFDocument } from "pdf-lib";
 import { clerkAuth } from "../../middleware/auth.ts";
@@ -12,9 +12,16 @@ import { generateMainContent } from "../../shared/utils/main/utils.ts";
 import { generateOutlines } from "../../shared/utils/outlines/utils.ts";
 import { env } from "../../config/env.ts";
 import { Client } from "@upstash/qstash";
-import { utilsInit } from "../../storage/utils/utils.ts";
-import { downloadFile, uploadToUtils } from "../../storage/utils/index.ts";
+import {
+  deleteFile,
+  downloadFile,
+  uploadToUtils,
+} from "../../storage/utils/index.ts";
 import crypto from "crypto";
+import { uploadToMain } from "../../storage/main/index.ts";
+import { db } from "../../config/db.ts";
+import { assignments } from "../../db/schema.ts";
+import { eq } from "drizzle-orm";
 
 const test = new Hono();
 
@@ -78,10 +85,21 @@ test.post("/queue", async (c) => {
     const outlines = await generateOutlines(mainContent, outlinesEnabled);
     const pdfsToMerge = outlines
       ? [coverPage, outlines, mainContent]
-      : [coverPage, mainContent]
+      : [coverPage, mainContent];
     const mergedPdf = await PDFService.mergePDFs(pdfsToMerge);
-    PDFService.saveToFile(mergedPdf, String(Math.random() * 10) +".pdf");
+    PDFService.saveToFile(mergedPdf, String(Math.random() * 10) + ".pdf");
     console.log("it is all done baby.");
+    await uploadToMain(
+      mergedPdf as Buffer<ArrayBufferLike>,
+      `final-${crypto.randomUUID()}.pdf`
+    );
+    const deleted = await deleteFile(body["assignmentPdf"]);
+    console.log(deleted);
+    await db
+      .update(assignments)
+      .set({ filePath: body["assignmentPdf"], status: "done" })
+      .where(eq(assignments.id, body["assignmentId"]));
+
     return c.json({ message: "ok" });
   } catch (err) {
     return c.json(
@@ -89,37 +107,19 @@ test.post("/queue", async (c) => {
       500
     );
   }
-
-  // try {
-  //   await utilsInit();
-  //   const assignmentBuffer = await downloadFile(assignmentPdfPath);
-  //   console.log("Downloaded assignment PDF:", assignmentBuffer.byteLength);
-  // } catch(err){
-  //   console.error("Error downloading assignment PDF:", err);
-  //   return c.json({ message: "Failed to download assignment PDF" }, 500);
-  // }
-
-  // console.log("Received job:", body);
-
-  return c.json({ message: "ok" });
 });
 
-test.post("/", async (c) => {
+test.post("/", clerkAuth, async (c: Context) => {
   const body = await c.req.parseBody();
 
+  // Validation
   if (!body["assignmentPdf"]) {
     return c.json({ message: "No assignment PDF uploaded" }, 400);
   }
 
-  const numPages = toNumber(body["numPages"]);
-  if (numPages === null) {
-    return c.json({ message: "No number of pages specified" }, 400);
-  }
-  if (numPages < 1 || numPages > 10) {
-    return c.json(
-      { message: "Number of pages must be at least 1 and at most 10" },
-      400
-    );
+  const numPages = Number(body["numPages"]);
+  if (!numPages || numPages < 1 || numPages > 10) {
+    return c.json({ message: "Invalid number of pages (1–10 required)" }, 400);
   }
 
   const coverPageType = String(body["coverPageType"] ?? "");
@@ -127,48 +127,71 @@ test.post("/", async (c) => {
     return c.json({ message: "Invalid cover page type" }, 400);
   }
 
-  const assignmentPath = `assignment-${crypto.randomUUID()}.pdf`;
-  let assignmentBuffer: Buffer;
-  try {
-    assignmentBuffer = await normalizeToBuffer(body["assignmentPdf"]);
-    await utilsInit();
-    await uploadToUtils(assignmentBuffer, assignmentPath);
-  } catch (err) {
-    console.error("Error uploading assignment PDF:", err);
-    return c.json({ message: "Failed to upload assignment PDF" }, 500);
-  }
+  // Insert assignment into DB first — synchronous
+  const [inserted] = await db
+    .insert(assignments)
+    .values({
+      userId: c.get("userId"),
+      filePath: "",
+      status: "pending",
+    })
+    .returning({ id: assignments.id });
 
-  let coverPath: string | undefined;
-  try {
-    if (body["coverPageFile"]) {
-      coverPath = `cover-${crypto.randomUUID()}.pdf`;
-      const coverBuffer = await normalizeToBuffer(body["coverPageFile"]);
-      await utilsInit();
-      await uploadToUtils(coverBuffer, coverPath);
+  // Immediately respond to client
+
+  const queues = client.queue({
+    queueName: "users-queue",
+  });
+  const queueInfo = await queues.get();
+
+  const numberOfJobs = queueInfo.lag;
+
+  const response = c.json({ message: "Job queued successfully", queue: numberOfJobs }, 200);
+
+  // 🔹 Fire-and-forget background task (Node.js compatible)
+  (async () => {
+    try {
+      const assignmentPath = `assignment-${crypto.randomUUID()}.pdf`;
+      const assignmentBuffer = await normalizeToBuffer(body["assignmentPdf"]);
+      await uploadToUtils(assignmentBuffer, assignmentPath);
+
+      let coverPath: string | undefined;
+      if (body["coverPageFile"]) {
+        coverPath = `cover-${crypto.randomUUID()}.pdf`;
+        const coverBuffer = await normalizeToBuffer(body["coverPageFile"]);
+        await uploadToUtils(coverBuffer, coverPath);
+      }
+
+      const payload = {
+        ...body,
+        assignmentId: inserted.id, // attach DB ID for tracking
+        assignmentPdf: assignmentPath,
+        ...(coverPath ? { coverPageFile: coverPath } : {}),
+      };
+
+      await client.publishJSON({
+        url: "https://ed6c21e5d86f.ngrok-free.app/test/queue",
+        body: payload,
+        flowControl: { key: "queue", parallelism: 1 },
+        retries: 2,
+      });
+
+      console.log("✅ Job published:", payload);
+    } catch (err) {
+      console.error("❌ Background task failed:", err);
+
+      // Optional: mark assignment as failed in DB
+      try {
+        await db
+          .update(assignments)
+          .set({ status: "failed" })
+          .where(eq(assignments.id, inserted.id));
+      } catch (dbErr) {
+        console.error("❌ Failed to update assignment status:", dbErr);
+      }
     }
+  })();
 
-    const payload = {
-      ...body,
-      assignmentPdf: assignmentPath,
-      ...(coverPath ? { coverPageFile: coverPath } : {}),
-    };
-
-    console.log("Payload", payload);
-
-    await client.publishJSON({
-      url: "https://d645f4a1d6bb.ngrok-free.app/test/queue",
-      body: payload,
-      flowControl: { key: "queue", parallelism: 1 },
-      retries: 2,
-    });
-
-    console.log("Job your love");
-
-    return c.json({ message: "Job queued", payload });
-  } catch (err) {
-    console.error("Error uploading cover PDF:", err);
-    return c.json({ message: "Failed to upload cover PDF" }, 500);
-  }
+  return response;
 });
-
 export default test;
